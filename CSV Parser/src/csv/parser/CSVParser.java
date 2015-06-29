@@ -17,13 +17,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Stack;
 import java.util.*;
 import com.opencsv.*;
 import java.io.FileNotFoundException;
-
+import org.apache.commons.lang3.ArrayUtils;
 public class CSVParser {
 
     @SuppressWarnings("resource")
@@ -55,8 +56,7 @@ public class CSVParser {
         for (String[] row : allRows) {
             File file1 = new File("./output//newdir//folder" + fin + "");
             file1.mkdirs();
-//            File file3 = new File("./output//newdir//folder" + fin + "//content");
-//            file3.mkdirs();
+
             PrintWriter writer_content = new PrintWriter("./output//newdir//folder" + fin + "//contents", "UTF-16");
             PrintWriter writer_lrmi = new PrintWriter("./output//newdir//folder" + fin + "//metadata_lrmi.xml", "UTF-16");
             PrintWriter writer = new PrintWriter("./output//newdir//folder" + fin + "//content.xml", "UTF-16");
@@ -80,11 +80,8 @@ public class CSVParser {
                 if (val_array.length == 0) {
                     continue;
                 }
-                PrintWriter useWriter;
-                if (field[0].equals("dc")) {
-                    useWriter = writer;
-                } else {
-                    System.out.println("LRMI");
+                PrintWriter useWriter =  writer;
+                if (field[0].equals("lrmi")) {
                     useWriter = writer_lrmi;
                 }
                 switch (field.length) {
@@ -117,6 +114,14 @@ public class CSVParser {
             val_array = getEduLvl(val_array);
         } else if (elem.equals("learningResourceType")) {
             val_array = getLearningResourceType(val_array);
+        } else if (elem.equals("format") && qual.equals("extent")) {
+            val_array = getFormatExtent(val_array);
+        }else if(elem.equals("format") && qual.equals("difficultylevel")){
+            val_array = getFormatDifficultyLevel(val_array);
+        }else if(elem.equals("type") && qual.equals("")){
+            val_array = getType(val_array);
+        }else if(elem.equals("subject") && qual.equals("keyword")){
+            val_array = getSubjectKeyword(val_array);
         }
         for (int i = 0; i < val_array.length; i++) {
             if (val_array[i].equals("") || val_array[i] == null) {
@@ -214,6 +219,51 @@ public class CSVParser {
     }
 
     private static String[] getLearningResourceType(String[] val_array) {
+        String delimiter = "/";
+        String[] new_val_array = val_array[0].split(delimiter);
+        for (int i = 0; i < new_val_array.length; i++) {
+            new_val_array[i] = new_val_array[i].trim();
+            if(new_val_array[i].equals("Audio-Video Lecture")){
+                new_val_array[i] = "video";
+            }
+            if(new_val_array[i].equals("Tutorial")){
+                new_val_array[i] = "exercise";
+            }
+        }
+        return new_val_array;
+    }
+
+    private static String[] getFormatExtent(String[] val_array) {
+        val_array = ArrayUtils.removeElement(val_array, val_array[0]);
         return val_array;
     }
+
+    private static String[] getFormatDifficultyLevel(String[] val_array) {
+        for (int i = 0; i < val_array.length; i++) {
+            val_array[i] = val_array[i].toLowerCase();
+        }
+        return val_array;
+    }
+
+    private static String[] getType(String[] val_array) {
+        for(int i = 0; i < val_array.length; i++){
+            //"text, video, audio, image, presentation,application, animation, simulation""+ "
+            val_array[i] = val_array[i].toLowerCase();
+        }
+        return val_array;
+    }
+
+    private static String[] getSubjectKeyword(String[] val_array) {
+        List<String> toRemove = new ArrayList<>();
+        for(String val : val_array){
+            if(val.contains(".")){
+                toRemove.add(val);
+            }
+        }
+        for(String val : toRemove){
+            val_array = ArrayUtils.removeElement(val_array, val);
+        }
+        return val_array;
+    }
+    
 }
