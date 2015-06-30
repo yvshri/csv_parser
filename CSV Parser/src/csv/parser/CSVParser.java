@@ -33,6 +33,7 @@ public class CSVParser {
         String[] val_array;
         file_to_parse = "./input/E-library-data-3.csv";
         //Build reader instance
+        //Read CSV file
         CSVReader reader = new CSVReader(new FileReader(file_to_parse), ';', '"', 1);
 
         //Read all rows at once
@@ -41,30 +42,37 @@ public class CSVParser {
 //        Read CSV line by line and use the string array as you want
         for (String[] row : allRows) {
             for (int i = 0; i < row.length; i++) {
+                //Removing all newlines, tabs and '&' characters(invalid XML character)
                 row[i] = row[i].replaceAll("(\\r|\\n|\\r\\n)+", " ");
                 row[i] = row[i].replaceAll(System.getProperty("line.separator"), "; ");
                 row[i] = row[i].replaceAll("&", "and");
-
             }
 
             System.out.println(Arrays.toString(row));
         }
+        //Get the input fields
         List<String[]> map = getMap();
         String[] field;
-        long fin;
-        fin = 0;
+        //Numbering for folders, folderNum is incremented for each new file
+        long folderNum;
+        folderNum = 0;
         for (String[] row : allRows) {
-            File file1 = new File("./output//newdir//folder" + fin + "");
+            //Creating new folder
+            File file1 = new File("./output//newdir//folder" + folderNum + "");
             file1.mkdirs();
-
-            PrintWriter writer_content = new PrintWriter("./output//newdir//folder" + fin + "//contents", "UTF-16");
-            PrintWriter writer_lrmi = new PrintWriter("./output//newdir//folder" + fin + "//metadata_lrmi.xml", "UTF-16");
-            PrintWriter writer = new PrintWriter("./output//newdir//folder" + fin + "//content.xml", "UTF-16");
+            //Creating content file
+            PrintWriter writer_content = new PrintWriter("./output//newdir//folder" + folderNum + "//contents", "UTF-16");
+            //Creating metadata_lrmi.xml
+            PrintWriter writer_lrmi = new PrintWriter("./output//newdir//folder" + folderNum + "//metadata_lrmi.xml", "UTF-16");
+            //Creating content.xml
+            PrintWriter writer = new PrintWriter("./output//newdir//folder" + folderNum + "//content.xml", "UTF-16");
             writer.println("<?xml version=\"1.0\" encoding=\"utf-16\" standalone=\"no\"?>");
             writer.println("<dublin_core schema=\"dc\">");
             writer_lrmi.println("<?xml version=\"1.0\" encoding=\"utf-16\" standalone=\"no\"?>");
             writer_lrmi.println("<dublin_core shema=\"lrmi\">");
             for (int i = 0; i < row.length; i++) {
+                //After snooping data, we have to change these setting for each new csv file, as the data fileds are many times mismatched
+                //These if-else statements take care of mismatched steps.
                 if (i == 43) {
                     continue;
                 } else if (i == 43) {
@@ -76,10 +84,11 @@ public class CSVParser {
                 } else {
                     field = map.get(i);
                 }
+                //Separate multiple values
                 val_array = parseVal(row[i]);
-                if (val_array.length == 0) {
-                    continue;
-                }
+//                if (val_array.length == 0) {
+//                    continue;
+//                }
                 PrintWriter useWriter =  writer;
                 if (field[0].equals("lrmi")) {
                     useWriter = writer_lrmi;
@@ -95,7 +104,7 @@ public class CSVParser {
 
                 }
             }
-            fin++;
+            folderNum++;
             writer.println("</dublin_core>");
             writer_lrmi.println("</dublin_core>");
             writer.close();
@@ -104,8 +113,10 @@ public class CSVParser {
         }
     }
 
+    //Supportive function to write into xml files
     private static void writeXML(PrintWriter writer, String elem, String qual,
             String[] val_array) {
+        //Different conditions to map E-library's format to our metadata format
         if (elem.equals("language")) {
             val_array = getLang(val_array);
         } else if (elem.equals("educationalAlignment") && qual.equals("educationalFramework")) {
@@ -123,7 +134,9 @@ public class CSVParser {
         }else if(elem.equals("subject") && qual.equals("keyword")){
             val_array = getSubjectKeyword(val_array);
         }
+        //Write in xml file
         for (int i = 0; i < val_array.length; i++) {
+            //Skip if there is no entry for the field
             if (val_array[i].equals("") || val_array[i] == null) {
                 continue;
             } else {
@@ -140,20 +153,8 @@ public class CSVParser {
             }
         }
     }
-
-    private static String[] getLang(String[] val) {
-        for (int i = 0; i < val.length; i++) {
-            if (val[i].equals("English")) {
-                val[i] = "eng";
-            } else if (val[i].equals("Hindi")) {
-                val[i] = "hin";
-            } else if (val[i].equals("Bengali")) {
-                val[i] = "ben";
-            }
-        }
-        return val;
-    }
-
+    
+    //Prepare the field map first similar to map.csv given in input folder
     private static List getMap() throws FileNotFoundException, IOException {
         String file_to_parse;
         file_to_parse = "./input/map.csv";
@@ -172,7 +173,21 @@ public class CSVParser {
         return allRows;
 
     }
+//Convert the language to our format, add more if-else cluase for other languages
+    private static String[] getLang(String[] val) {
+        for (int i = 0; i < val.length; i++) {
+            if (val[i].equals("English")) {
+                val[i] = "eng";
+            } else if (val[i].equals("Hindi")) {
+                val[i] = "hin";
+            } else if (val[i].equals("Bengali")) {
+                val[i] = "ben";
+            }
+        }
+        return val;
+    }
 
+    //Separate multiple values from string to array
     private static String[] parseVal(String val) {
         val = val.replaceAll("\"", "");
         val = val.replace("; |;", " ");
